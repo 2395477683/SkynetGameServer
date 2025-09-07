@@ -1,5 +1,6 @@
 local service = require "service"
 local skynet = require "skynet"
+local redisHc = requrie "redisHc"
 
 local balls = {}
 local foods={}
