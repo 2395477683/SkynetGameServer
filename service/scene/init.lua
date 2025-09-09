@@ -1,6 +1,7 @@
 local service = require "service"
 local skynet = require "skynet"
-local redisHc = requrie "redisHc"
+local redisHc = require "redisHc"
+local leaderboard = require "leaderboard"
 
 local balls = {}
 local foods={}
@@ -76,6 +77,8 @@ function service.resp.enter(source,playerid,node,agent)
     --广播玩家信息
     local entermsg = {"enter",playerid,b[1].x,b[1].y,b[1].size}
     broadcast(entermsg)
+    --更新排行榜记录
+    leaderboard.update_score(playerid,b[1].size)
     --记录
     balls[playerid]=b
     --[[测试
@@ -199,13 +202,32 @@ function eat_update()
     end
 end
 
+function board_update()
+    --skynet.error("测试")
+    local ok=leaderboard.get_top_players(5)
+    --skynet.error(ok)
+    if not ok then 
+        skynet.error("Failed get_top_players!")
+    end
+    ---[[broadcast(ok)
+    for i, v in pairs(ok) do 
+        local msg ={"玩家id: "..v.player_id.." | 玩家分数： "..v.score.." |  玩家排名： "..v.rank}
+        --skynet.error("玩家id: "..v.player_id.." | 玩家分数： "..v.score.." |  玩家排名： "..v.rank)
+        broadcast(msg)
+    end
+    --]]
+
+end
+
 function update(frame)
     food_update()
     move_update()
-    eat_update()
+    eat_update()  
+    board_update()
 end
 
 function service.init()
+    leaderboard.init_redis()
     skynet.fork(function()
         local stime = skynet.now()
         local frame = 0
@@ -216,7 +238,7 @@ function service.init()
                 skynet.error(err)
             end
             local etime = skynet.now()
-            local waittime =frame*2 - (etime - stime)
+            local waittime =frame*20 - (etime - stime)
             --测试print("frame: "..frame.." waittime: "..waittime)
             if waittime <= 0 then 
                 waittime =2

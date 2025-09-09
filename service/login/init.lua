@@ -4,6 +4,7 @@ local service =require "service"
 
 service.client={}
 
+--用户登录
 function service.client.login(fd,msg,source)
     local playerid = msg[2]
     print(type(playerid))
@@ -13,7 +14,6 @@ function service.client.login(fd,msg,source)
     local yanzhenmimas = db:query("select password from user where playerid = "..playerid)
     local yanzhenmima
     for i, v in pairs(yanzhenmimas) do
-        skynet.error(v)
         for j,k in pairs(v) do 
             yanzhenmima=tostring(k)
         end
@@ -36,6 +36,30 @@ function service.client.login(fd,msg,source)
     skynet.error("用户 : "..playerid.." ，login succ")
 
     return {"login",0,"登录成功！"}
+end
+
+--用户注册
+function service.client.register(fd,msg,source)
+    if msg[2]==nil or msg[3]==nil or msg[4]==nil then
+        return {"register",0,"注册失败！请输入完整的信息！"}
+    end
+    local playerid = tostring(msg[2])
+    local password = tostring(msg[3])
+    local playername = tostring(msg[4])
+    local yanzhenid = db:query("select playerid from user where playerid ="..playerid)
+    if #yanzhenid ~= 0 then 
+        print("测试！ ",yanzhenid[1].playerid)
+        return {"register",0,"账号已存在！"}
+    end
+
+    local sql = string.format("INSERT INTO user (playerid, password,username) VALUES (%s,%s,%s)",playerid,password,playername)
+    print("测试！",sql)
+    local ok = db:query(sql)
+    if not ok then 
+        return {"register",0,"注册失败！"}
+    end
+
+    return {"register",1,"注册成功！"}
 end
 
 function service.resp.client(source, fd, cmd , msg)

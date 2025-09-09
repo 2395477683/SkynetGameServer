@@ -23,7 +23,6 @@ function mgrplayer()
 end
 
 function service.resp.reqlogin(source,playerid,node,gate)
-    print(type(playerid))
     local mplayer = players[playerid]
     skynet.error(mplayer)
     if mplayer and mplayer.status==STATUS.LOGIN then 

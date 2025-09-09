@@ -54,8 +54,6 @@ function process_msg(fd,msgstr)
 
     local conn =conns[fd]
     local playerid = conn.playerid
-    print(type(playerid))
-    skynet.error(playerid)
     if not playerid then
         local node = skynet.getenv("node")
         local nodecfg = runconfig[node]
@@ -105,6 +103,17 @@ end
 local recv_loop=function (fd)
     socket.start(fd)
     skynet.error("Fd : "..fd.." 连接成功！")
+    local startbuf = [[
+    欢迎来到球吃球大作战！ 
+    你可以使用以下命令：
+    注册：register,你的账号,你的密码,玩家姓名
+    登录：login,你的账号,你的密码
+    加入一局游戏：enter
+    移动：shift,x方向速度(数字),y方向速度(数字)
+    分裂：fenlie
+    离开本局游戏:leave_scene\r\n
+    ]]
+    socket.write(fd,startbuf)
     local readbuf=""
     while true do
         local recvstr=socket.read(fd)
@@ -147,7 +156,6 @@ end
 
 function service.resp.send(source,playerid,msg)
     skynet.error("send",playerid)
-    print(type(playerid))
     local gplayer = players[playerid]
     skynet.error(gplayer)
     if gplayer== nil then
@@ -158,7 +166,6 @@ function service.resp.send(source,playerid,msg)
         return 
     end
     service.resp.send_by_fd(nil,c.fd,msg)
-
 end
 
 

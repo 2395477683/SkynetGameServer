@@ -1,7 +1,7 @@
-local redis =require "redis"
+local redis = require "redis"
 local service = require "service"
 local skynet = require "skynet"
-local cjson = require "cjson"
+--local cjson = require "cjson"
 
 local M = {}
 local pool = {}
@@ -9,22 +9,23 @@ local conn_count = 5 --连接池大小
 local NAMESPACE = "player"
 
  -- 初始化
-function init()
+function M.Hcinit()
+    print("error !")
     for i = 1, conn_count do 
-        local redisc = reids.connect({host = 127.0.0.1,port = 6379 })
-        redisc:select(0)
-        table.inset(pool,redisc)
+        local redisc = redis.connect({host = "127.0.0.1",port = 6379,db=0 })
+        table.insert(pool,redisc)
     end
 end
 
  -- 简单的连接池实现
-local function get_conn()
+function M.get_conn()
     local idx = math.random(1,#pool)
-    return poolp[idx]
+    print(pool[idx])
+    return pool[idx]
 end
 
 -- 生成Redis键名
-local  function make_key(namespace,id)
+function M.make_key(namespace,id)
     return string.format("%s:%s",namespace,id)
 end
 
@@ -79,7 +80,7 @@ function M.invalidate(namespace,id)
 end
 
 -- 获取玩家数据
-fucntion M.get_player(player_id)
+function M.get_player(player_id)
     --尝试从缓存获取
     local cached_data = M.get(NAMESPACE,player_id)
     if cached_data then

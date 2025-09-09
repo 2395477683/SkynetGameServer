@@ -24,19 +24,14 @@ end
 function service.init()
     local data=db:query("select coin from userdata where playerid = "..service.id)
     local coins,hps
-    skynet.error(data)
     for i , v in pairs(data) do 
-        skynet.error(v)
         for j,k in pairs(v) do 
-            skynet.error(k)
             coins=k
         end
     end
     data=db:query("select hp from userdata where playerid = "..service.id)
     for i , v in pairs(data) do 
-        skynet.error(v)
         for j,k in pairs(v) do 
-            skynet.error(k)
             hps=k
         end
     end

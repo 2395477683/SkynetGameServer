@@ -36,7 +36,7 @@ function service.client.enter(msg)
     for i ,v in pairs(msg) do
         print("enter msg i: "..i.." msg : "..v)
     end
-    local snode ,sid =random_scene()
+    local snode,sid =random_scene()
     local sname="scene"..sid
     local isok=service.call(snode,sname,"enter",service.id,mynode,skynet.self())
     if not isok then 
