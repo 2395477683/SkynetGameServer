@@ -111,8 +111,8 @@ local recv_loop=function (fd)
     加入一局游戏：enter
     移动：shift,x方向速度(数字),y方向速度(数字)
     分裂：fenlie
-    离开本局游戏:leave_scene\r\n
-    ]]
+    离开本局游戏:leave_scene
+]]
     socket.write(fd,startbuf)
     local readbuf=""
     while true do

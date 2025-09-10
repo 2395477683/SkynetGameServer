@@ -41,11 +41,6 @@ function service.init()
     }
 end
 
-function service.client.work(msg)
-    service.data.coin=service.data.coin+1
-    return {"work",service.data.coin}
-end
-
 
 function service.resp.kick(source)
     service.leave_scene()

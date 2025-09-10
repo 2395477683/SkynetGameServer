@@ -1,5 +1,6 @@
 local skynet =require "skynet"
 local service =require "service"
+local redisHc = require "redisHc"
 
 
 service.client={}
@@ -11,16 +12,14 @@ function service.client.login(fd,msg,source)
     local pw = tostring(msg[3])
     local gate = source
     node = skynet.getenv("node")
-    local yanzhenmimas = db:query("select password from user where playerid = "..playerid)
-    local yanzhenmima
-    for i, v in pairs(yanzhenmimas) do
-        for j,k in pairs(v) do 
-            yanzhenmima=tostring(k)
-        end
-    end
+    local yanzhenmima = redisHc.get_player(playerid)
     skynet.error(yanzhenmima,pw)
     if pw ~= yanzhenmima then 
-        return{"login",1,"密码错误"}
+        if yanzhenmima == nil then
+            return {"login",2,"账号未注册！"}
+        else
+            return{"login",1,"密码错误"}
+        end
     end
     skynet.error("agent")
     local isok,agent = skynet.call("agentmgr","lua","reqlogin",playerid,node,gate)
@@ -52,7 +51,9 @@ function service.client.register(fd,msg,source)
         return {"register",0,"账号已存在！"}
     end
 
-    local sql = string.format("INSERT INTO user (playerid, password,username) VALUES (%s,%s,%s)",playerid,password,playername)
+    local sql = string.format("INSERT INTO user (playerid,password,username) VALUES (%s,%s,'%s')",playerid,password,playername)
+    redisHc.invalidate(playerid)
+    redisHc.set(playerid, password, 3600)
     print("测试！",sql)
     local ok = db:query(sql)
     if not ok then 
@@ -71,5 +72,8 @@ function service.resp.client(source, fd, cmd , msg)
     end
 end
 
+function service.init()
+    redisHc.Hcinit()
+end
 
 service.start(...)

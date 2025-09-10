@@ -10,7 +10,6 @@ local NAMESPACE = "player"
 
  -- 初始化
 function M.Hcinit()
-    print("error !")
     for i = 1, conn_count do 
         local redisc = redis.connect({host = "127.0.0.1",port = 6379,db=0 })
         table.insert(pool,redisc)
@@ -30,15 +29,15 @@ function M.make_key(namespace,id)
 end
 
 -- 从缓存获取数据
-function M.get(namespace,id)
-    local conn = get_conn()
-    local key = make_key()
+function M.get(id)
+    local conn = M.get_conn()
+    local key = M.make_key(NAMESPACE,id)
 
     local data,err = conn:get(key)
 
-    if data and data ~= ngx.null  then 
+    if data and data ~= "unknown" then 
         skynet.error("Cash HIT for ",key)
-        return cjson.decode(data)
+        return data
     else
         skynet.error("Cash MISS for ",key)
         return nil
@@ -46,10 +45,10 @@ function M.get(namespace,id)
 end
 
 -- 设置缓存数据，带过期时间
-function M.set(namespace,id,data,ttl)
-    local conn = get_conn()
-    local key = make_key(namespace,id)
-    local serialized = cjson.encode(data)
+function M.set(id,data,ttl)
+    local conn = M.get_conn()
+    local key = M.make_key(NAMESPACE,id)
+    local serialized = data
 
     local ok,err 
     if ttl then 
@@ -66,9 +65,9 @@ function M.set(namespace,id,data,ttl)
 end
 
 --删除缓存
-function M.invalidate(namespace,id)
-    local conn = get_conn()
-    local key = make_key(namespace,id)
+function M.invalidate(id)
+    local conn = M.get_conn()
+    local key = M.make_key(NAMESPACE,id)
 
     local ok ,err = conn:del(key)
 
@@ -82,24 +81,27 @@ end
 -- 获取玩家数据
 function M.get_player(player_id)
     --尝试从缓存获取
-    local cached_data = M.get(NAMESPACE,player_id)
+    local cached_data = M.get(player_id)
     if cached_data then
         return cached_data
     end
 
     --缓存未命中，从数据库获取
-    skyent.error("Cache miss for player:",player_id," , querying MySQL...")
-    local res = db:query("SELECT * FROM players WHERE id = " .. player_id)
-    local player_data = res[1]
+    skynet.error("Cache miss for player:",player_id,", querying MySQL...")
+    local res = db:query("SELECT password FROM user WHERE playerid = " .. player_id)
+    if #res ~= 0 then
+        local player_data = res[1].password
+    end
 
     if not player_data then
-        --防止缓存穿透,即使不存在也缓存空值
-        M.set(NAMESPACE, player_id, {__not_found = true}, 300) --5分钟
+        --防止缓存穿透,即使不存在也缓存值
+        local unknown = "unknown"
+        M.set(player_id, unknown, 300) --5分钟
         return nil
     end
 
     --回填缓存
-    cache.set(NAMESPACE, player_id, player_data, 3600) --1小时
+    M.set(player_id, player_data, 3600) --1小时
     return player_data
 end
 
@@ -119,7 +121,7 @@ function M.update_player(player_id,updates)
     end
 
     --使缓存失效
-    M.invalidate(NAMESPACE,player_id)
+    M.invalidate(player_id)
     return true
 end 
 
@@ -147,17 +149,17 @@ function M.more_get_players(player_ids)
         --处理查询结果并回填缓存
         for _, row in ipairs(res) do
             results[row.id] = row
-            M.set(NAMESPACE, row.id, row, 3600)
+            M.set(row.id, row, 3600)
         end
         
         --处理不存在的ID（防止缓存穿透）
         for _, id in ipairs(missing_ids) do
             if not results[id] then
-                M.set(NAMESPACE, id, {__not_found = true}, 300)
+                M.set(id, {__not_found = true}, 300)
             end
         end
     end
-    
+     
     return results
 
 end

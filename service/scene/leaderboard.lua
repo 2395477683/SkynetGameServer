@@ -9,7 +9,6 @@ local leaderboard_key = "leaderboard:global"
 --初始化redis连接
 function M.init_redis()
     redisHc.Hcinit()
-    print("A")
     redis_conn = redisHc.get_conn()
 end
 
