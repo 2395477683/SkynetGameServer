@@ -19,7 +19,6 @@ end
  -- 简单的连接池实现
 function M.get_conn()
     local idx = math.random(1,#pool)
-    print(pool[idx])
     return pool[idx]
 end
 

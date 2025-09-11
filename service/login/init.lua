@@ -1,15 +1,32 @@
 local skynet =require "skynet"
 local service =require "service"
 local redisHc = require "redisHc"
-
+local pb = require "protobuf"
 
 service.client={}
 
+--对protobuf解码
+local function proto_decode(msg)
+    local protobuf_buff = pb.decode("Cs_Login.Cs_Login",msg)
+    return protobuf_buff
+end
+
+--对protobuf编码
+local function proto_encode(msg)
+    local protobuf_msg={
+        cmd = msg[1],
+        result = msg[2],
+        info = msg[3]
+    }
+    local buff = pb.encode("Sc_Login.Sc_Login",protobuf_msg)
+    return buff
+end
+
 --用户登录
 function service.client.login(fd,msg,source)
-    local playerid = msg[2]
-    print(type(playerid))
-    local pw = tostring(msg[3])
+    local msg =proto_decode(msg)
+    local playerid = msg.playerid
+    local pw = msg.password
     local gate = source
     node = skynet.getenv("node")
     local yanzhenmima = redisHc.get_player(playerid)
@@ -63,10 +80,12 @@ function service.client.register(fd,msg,source)
     return {"register",1,"注册成功！"}
 end
 
-function service.resp.client(source, fd, cmd , msg)
+function service.resp.client(source, fd, cmd, msg)
     if service.client[cmd] then
         local ret_msg=service.client[cmd](fd,msg,source)
-        skynet.send(source,"lua","send_by_fd",fd,ret_msg)
+        local protobuf_ret = proto_encode(ret_msg)
+
+        skynet.send(source,"lua","send_by_fd",fd,protobuf_ret)
     else
         skynet.error("loginService.resp.client failed！",cmd)
     end
@@ -74,6 +93,8 @@ end
 
 function service.init()
     redisHc.Hcinit()
+    pb.register_file("./proto/Cs_Login.pb")
+    pb.register_file("./proto/Sc_Login.pb")
 end
 
 service.start(...)

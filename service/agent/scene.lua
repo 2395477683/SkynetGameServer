@@ -72,3 +72,7 @@ function service.client.fenlie(msg)
     end
     service.call(service.snode,service.sname,"fenlie",service.id)
 end
+
+function service.client.exit()
+    
+end

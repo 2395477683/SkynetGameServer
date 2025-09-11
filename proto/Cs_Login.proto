@@ -1,0 +1,9 @@
+syntax = "proto3";
+package Cs_Login;
+
+// 登录请求
+message Cs_Login {
+    string playerid = 1;
+    string password = 2;
+    string username = 3;
+}

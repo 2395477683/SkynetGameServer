@@ -12,8 +12,8 @@ return {
 
     node1={
         gateway={
-            [1]={port=8000},
-            [2]={port=8001},
+            [1]={port=9000},
+            [2]={port=9001},
         },
 
         login={

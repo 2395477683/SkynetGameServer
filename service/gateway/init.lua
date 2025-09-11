@@ -2,6 +2,8 @@ local skynet =require "skynet"
 local service = require "service"
 local socket =require "skynet.socket"
 local runconfig = require "runconfig"
+local pb =require "protobuf"
+
 
 conns={}
 players={}
@@ -25,7 +27,7 @@ function player()
     return m
 end
 
---解码
+--对客户端指令解码
 local str_unpack = function (msgstr)
     local msg={}
 
@@ -43,25 +45,51 @@ local str_unpack = function (msgstr)
     return msg[1],msg
 end
 
---编码
-function str_pack(cmd,msg)
-    return table.concat(msg,",").."\r\n"
+--构建发送给客户端的信息
+local str_pack = function (msg)
+    local str = ""
+    str= msg.cmd..","..msg.result..","..msg.info.."\r\n"
+    return str
 end
 
+--对请求登录protobuf编码
+local function protobuf_encode(msg)
+    local msg ={
+        playerid = msg[2],
+        password = msg[3],
+        username = msg[4] or "unknow"
+    }
+    --skynet.error("测试！"..msg.username)
+    local buff = pb.encode("Cs_Login.Cs_Login",msg)
+    return buff
+end
+
+--对登录回应protobuf解码
+local function protobuf_decode(msg)
+    local buff = pb.decode("Sc_Login.Sc_Login",msg)
+    return buff
+end
+
+
+--检查是否登录
 function process_msg(fd,msgstr)
     local cmd,msg=str_unpack(msgstr)
     skynet.error("recv "..fd.. " [ "..cmd.." ] { "..table.concat(msg,",").." } ")
 
     local conn =conns[fd]
     local playerid = conn.playerid
+
     if not playerid then
         local node = skynet.getenv("node")
         local nodecfg = runconfig[node]
         local loginid = math.random(1,#nodecfg.login)
         local login ="login"..loginid
-        skynet.send(login,"lua","client",fd,cmd,msg)
+
+        local proto_msg=protobuf_encode(msg)
+        --print("测试："..string.len(proto_msg))
+
+        skynet.send(login,"lua","client",fd,cmd,proto_msg)
     else
-        print("1 "..type(playerid))
         local gplayer = players[playerid]
         local agent = gplayer.agent
         skynet.send(agent,"lua","client",cmd,msg)
@@ -133,7 +161,7 @@ end
 
 
 function connect(fd,address)
-    print(address.." 请求连接。 Fd ： "..fd)
+    skynet.error(address.." 请求连接。 Fd ： "..fd)
     local c =conn()
     conns[fd]=c
     c.fd=fd
@@ -142,14 +170,16 @@ end
 
 
 
-function service.resp.send_by_fd(source ,fd ,msg)
+function service.resp.send_by_fd(source,fd,msg)
     if not conns[fd] then
         skynet.error("客户端未连接！")
         return
     end
+    local buff =protobuf_decode(msg)
+    --日志
+    skynet.error("send : "..fd.." [ "..buff.cmd.." ]{ "..buff.cmd..","..buff.result..","..buff.info.." }")
 
-    local buff =str_pack(msg[1],msg)
-    skynet.error("send : "..fd.." [ "..msg[1].." ]{ "..table.concat(msg,",").."}")
+    buff = str_pack(buff)
 
     socket.write(fd,buff)
 end
@@ -214,6 +244,9 @@ function service.init()                                                 --gateWa
     local node = skynet.getenv("node")
     local nodecfg = runconfig[node]
     local port = nodecfg.gateway[tonumber(service.id)].port
+
+    pb.register_file("./proto/Cs_Login.pb")
+    pb.register_file("./proto/Sc_Login.pb")
 
     local listenfd = socket.listen("0.0.0.0",port)
     skynet.error("Listen Socket : 0.0.0.0 Port: "..port)

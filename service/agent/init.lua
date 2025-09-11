@@ -44,7 +44,6 @@ end
 
 function service.resp.kick(source)
     service.leave_scene()
-    db:query("update userdata set coin ="..service.data.coin.." where playerid = "..service.id )
 end
 
 function service.resp.exit(source)
