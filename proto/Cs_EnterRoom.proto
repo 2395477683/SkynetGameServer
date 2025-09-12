@@ -1,0 +1,9 @@
+syntax = "proto3";
+package Cs_EnterRoom;
+
+// 发送给游戏场景的请求
+message Cs_EnterRoom {
+    string cmd = 1;
+    float direction_x = 2;
+    float direction_y = 3;
+}

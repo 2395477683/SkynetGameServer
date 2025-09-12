@@ -1,6 +1,6 @@
 local skynet =require "skynet"
 local service = require "service"
-
+local pb =require "protobuf"
 
 service.client={}
 service.gate=nil
@@ -10,10 +10,9 @@ require "scene"
 function service.resp.client(source,cmd,msg)
     service.gate=source
     if service.client[cmd] then
-        local ret_msg = service.client[cmd](msg,source)
+        local ret_msg,msgtype = service.client[cmd](msg,source)
         if ret_msg then
-            print("2 "..type(service.id))
-            skynet.send(source,"lua","send",service.id,ret_msg)
+            skynet.send(source,"lua","send",service.id,msgtype,ret_msg)
         end
     else
         skynet.error("service.resp.client failed！",cmd)
@@ -22,23 +21,7 @@ end
 
 
 function service.init()
-    local data=db:query("select coin from userdata where playerid = "..service.id)
-    local coins,hps
-    for i , v in pairs(data) do 
-        for j,k in pairs(v) do 
-            coins=k
-        end
-    end
-    data=db:query("select hp from userdata where playerid = "..service.id)
-    for i , v in pairs(data) do 
-        for j,k in pairs(v) do 
-            hps=k
-        end
-    end
-    service.data={
-        coin=coins,
-        hp=hps,
-    }
+    pb.register_file("./proto/Cs_EnterRoom.pb")
 end
 
 
@@ -51,8 +34,8 @@ function service.resp.exit(source)
 end
 
 
-function service.resp.send(source,msg)
-    skynet.send(service.gate,"lua","send",service.id,msg)
+function service.resp.send(source,msgtype,msg)
+    skynet.send(service.gate,"lua","send",service.id,msgtype,msg)
 end
 
 service.start(...)

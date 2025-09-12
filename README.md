@@ -198,27 +198,30 @@ proto_path = "../lualib/proto"  -- Protobuf协议路径
 ### 登录协议
 ```protobuf
 // 登录请求
-message CS_Login {
-    string username = 1;
+message Cs_Login {
+    string playerid = 1;
     string password = 2;
+    string username = 3;
 }
 
-// 登录响应
-message SC_Login {
-    int32 code = 1;
-    string message = 2;
-    PlayerInfo player = 3;
+//登录响应
+message Sc_Login{
+    string cmd =1 ;
+    int32 result =2;
+    string info =3 ;
 }
 ```
 
-### 房间协议
+### 游戏场景协议
 ```protobuf
-// 进入房间请求
+// 发送给游戏场景的请求
 message CS_EnterRoom {
-    int32 room_id = 1;
+    string cmd = 1;
+    float direction_x = 2;
+    float direction_y = 3;
 }
 
-// 进入房间响应
+// 游戏场景的响应
 message SC_EnterRoom {
     int32 code = 1;
     string message = 2;

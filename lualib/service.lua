@@ -12,7 +12,16 @@ local M ={
     init =nil,
     --服务的分发方法
     resp={},
+    --消息的类型
+    msgtype ={
+        player = 1,
+        food = 2,
+        system =3,
+        leader =4
+    }
 }
+
+
 
 
 function traceback(err)

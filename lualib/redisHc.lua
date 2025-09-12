@@ -88,8 +88,9 @@ function M.get_player(player_id)
     --缓存未命中，从数据库获取
     skynet.error("Cache miss for player:",player_id,", querying MySQL...")
     local res = db:query("SELECT password FROM user WHERE playerid = " .. player_id)
+    skynet.error("日志：".."SELECT password FROM user WHERE playerid = " .. player_id)
     if #res ~= 0 then
-        local player_data = res[1].password
+        player_data = res[1].password
     end
 
     if not player_data then

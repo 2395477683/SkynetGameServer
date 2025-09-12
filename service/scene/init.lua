@@ -2,6 +2,7 @@ local service = require "service"
 local skynet = require "skynet"
 local redisHc = require "redisHc"
 local leaderboard = require "leaderboard"
+local pb = require "protobuf"
 
 local balls = {}
 local foods={}
@@ -60,9 +61,9 @@ local function foodlist_msg()
 end
 
 
-function broadcast(msg)
+function broadcast(msg,msgtype)
     for i , v in pairs(balls) do
-        service.send(v[1].node,v[1].agent,"send",msg)
+        service.send(v[1].node,v[1].agent,"send",msgtype,msg)
     end
 end
 
@@ -75,8 +76,8 @@ function service.resp.enter(source,playerid,node,agent)
     b[1].node = node 
     b[1].agent =agent
     --广播玩家信息
-    local entermsg = {"enter",playerid,b[1].x,b[1].y,b[1].size}
-    broadcast(entermsg)
+    local entermsg = {"enter",playerid,b[1].x,b[1].y}
+    broadcast(entermsg,service.msgtype.player)
     --更新排行榜记录
     leaderboard.update_score(playerid,b[1].size)
     --记录
@@ -88,9 +89,9 @@ function service.resp.enter(source,playerid,node,agent)
     --回应客户端
     local ret_msg={"enter",0,"进入游戏！"}
     --发送游戏信息
-    service.send(b[1].node,b[1].agent,"send",ret_msg)
-    service.send(b[1].node,b[1].agent,"send",balllist_msg())
-    service.send(b[1].node,b[1].agent,"send",foodlist_msg())
+    service.send(b[1].node,b[1].agent,"send",msgtype.servcie.system,ret_msg)
+    service.send(b[1].node,b[1].agent,"send",msgtype,balllist_msg())
+    service.send(b[1].node,b[1].agent,"send",msgtype,foodlist_msg())
 
     return true
 end
@@ -228,6 +229,7 @@ end
 
 function service.init()
     leaderboard.init_redis()
+    pb.register_file("./proto/Cs_EnterRoom.pb")
     skynet.fork(function()
         local stime = skynet.now()
         local frame = 0

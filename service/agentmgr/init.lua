@@ -38,8 +38,8 @@ function service.resp.reqlogin(source,playerid,node,gate)
         mplayer.status = STATUS.LOGOUT
         skynet.error("kick")
         service.call(pnode,pagent,"kick")
-        service.send(pnode,pagent,"exit")
-        service.send(pnode,pgate,"send",playerid,{"kick","顶替下线"})
+        service.send(pnode,pagent,msgtype,"exit")
+        service.send(pnode,pgate,"send",playerid,msgtype,{"kick","顶替下线"})
         service.call(pnode,pgate,"kick",playerid)
     end
 
@@ -74,7 +74,7 @@ function service.resp.reqkick(source,playerid,reason)
     local pgate=player.gate
 
     service.call(pnode,pagent,"kick")
-    service.send(pnode,pagent,"exit")
+    service.send(pnode,pagent,msgtype,"exit")
     service.call(pnode,pgate,"kick",playerid)
     player[playerid]=nil
     return true

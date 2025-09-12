@@ -35,7 +35,7 @@ function M.get_top_players(n)
         local member = result[i]
         local score = tonumber(result[i+1])
         local player_id = string.match(member, "player:(%d+)")
-        
+
         table.insert(players, {
             rank = math.floor((i-1)/2) + 1,
             player_id = tonumber(player_id),

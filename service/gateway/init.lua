@@ -3,7 +3,7 @@ local service = require "service"
 local socket =require "skynet.socket"
 local runconfig = require "runconfig"
 local pb =require "protobuf"
-
+local proto = require "proto"
 
 conns={}
 players={}
@@ -22,7 +22,7 @@ function player()
     local m={
         playerid=nil,
         agent=nil,
-        conn=nil,
+        conn=nil
     }
     return m
 end
@@ -52,29 +52,10 @@ local str_pack = function (msg)
     return str
 end
 
---对请求登录protobuf编码
-local function protobuf_encode(msg)
-    local msg ={
-        playerid = msg[2],
-        password = msg[3],
-        username = msg[4] or "unknow"
-    }
-    --skynet.error("测试！"..msg.username)
-    local buff = pb.encode("Cs_Login.Cs_Login",msg)
-    return buff
-end
-
---对登录回应protobuf解码
-local function protobuf_decode(msg)
-    local buff = pb.decode("Sc_Login.Sc_Login",msg)
-    return buff
-end
-
-
 --检查是否登录
 function process_msg(fd,msgstr)
-    local cmd,msg=str_unpack(msgstr)
-    skynet.error("recv "..fd.. " [ "..cmd.." ] { "..table.concat(msg,",").." } ")
+    local cmds,msg=str_unpack(msgstr)
+    skynet.error("recv "..fd.. " [ "..cmds.." ] { "..table.concat(msg,",").." } ")
 
     local conn =conns[fd]
     local playerid = conn.playerid
@@ -84,15 +65,14 @@ function process_msg(fd,msgstr)
         local nodecfg = runconfig[node]
         local loginid = math.random(1,#nodecfg.login)
         local login ="login"..loginid
+        local proto_msg=proto.client_encode(cmds,msg)                     --序列化
 
-        local proto_msg=protobuf_encode(msg)
-        --print("测试："..string.len(proto_msg))
-
-        skynet.send(login,"lua","client",fd,cmd,proto_msg)
+        skynet.send(login,"lua","client",fd,cmds,proto_msg)
     else
+        local proto_msg=proto.client_encode(cmds,msg)                     --序列化
         local gplayer = players[playerid]
         local agent = gplayer.agent
-        skynet.send(agent,"lua","client",cmd,msg)
+        skynet.send(agent,"lua","client",cmds,proto_msg)
     end
 end 
 
@@ -139,7 +119,7 @@ local recv_loop=function (fd)
     加入一局游戏：enter
     移动：shift,x方向速度(数字),y方向速度(数字)
     分裂：fenlie
-    离开本局游戏:leave_scene
+    离开游戏:leave
 ]]
     socket.write(fd,startbuf)
     local readbuf=""
@@ -158,8 +138,6 @@ local recv_loop=function (fd)
 end
 
 
-
-
 function connect(fd,address)
     skynet.error(address.." 请求连接。 Fd ： "..fd)
     local c =conn()
@@ -170,24 +148,22 @@ end
 
 
 
-function service.resp.send_by_fd(source,fd,msg)
+function service.resp.send_by_fd(source,fd,msgtype,msg)
     if not conns[fd] then
         skynet.error("客户端未连接！")
         return
     end
-    local buff =protobuf_decode(msg)
+    local buff =proto.server_decode(msgtype,msg)                --反序列化
     --日志
-    skynet.error("send : "..fd.." [ "..buff.cmd.." ]{ "..buff.cmd..","..buff.result..","..buff.info.." }")
+    skynet.error("msgtype: "..msgtype..",send : "..fd.." [ "..buff.cmd.." ]{ "..buff.cmd..","..buff.result..","..buff.info.." }")
 
     buff = str_pack(buff)
 
     socket.write(fd,buff)
 end
 
-function service.resp.send(source,playerid,msg)
-    skynet.error("send",playerid)
+function service.resp.send(source,playerid,msgtype,msg)
     local gplayer = players[playerid]
-    skynet.error(gplayer)
     if gplayer== nil then
         return
     end
@@ -195,7 +171,7 @@ function service.resp.send(source,playerid,msg)
     if c == nil then 
         return 
     end
-    service.resp.send_by_fd(nil,c.fd,msg)
+    service.resp.send_by_fd(nil,c.fd,msgtype,msg)
 end
 
 
@@ -247,6 +223,8 @@ function service.init()                                                 --gateWa
 
     pb.register_file("./proto/Cs_Login.pb")
     pb.register_file("./proto/Sc_Login.pb")
+    pb.register_file("./proto/Cs_EnterRoom.pb")
+    pb.register_file("./proto/player.pb")
 
     local listenfd = socket.listen("0.0.0.0",port)
     skynet.error("Listen Socket : 0.0.0.0 Port: "..port)

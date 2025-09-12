@@ -1,6 +1,7 @@
 local skynet =require "skynet"
 local service =require "service"
 local runconfig =require "runconfig"
+local pb =require "protobuf"
 local mynode = skynet.getenv("node")
 
 service.sname = nil
@@ -9,12 +10,12 @@ service.snode = nil
 local function random_scene()
     local nodes={}
     for i , v in pairs(runconfig.scene) do
-        print("ceshi:  "..i.."  v : "..tostring(v))
+        print("测试:  "..i.."  v : "..tostring(v))
         table.insert(nodes,i)
         if runconfig.scene[mynode] then
             table.insert(nodes,mynode)
         end
-    end  
+    end
 
     for i ,v in pairs(nodes) do 
         print("nodes"..i.." : "..v)
@@ -29,13 +30,11 @@ local function random_scene()
     return scenenode,sceneid
 end
 
-function service.client.enter(msg)
+function service.client.enter()
     if service.sname then 
         return 
     end
-    for i ,v in pairs(msg) do
-        print("enter msg i: "..i.." msg : "..v)
-    end
+
     local snode,sid =random_scene()
     local sname="scene"..sid
     local isok=service.call(snode,sname,"enter",service.id,mynode,skynet.self())
@@ -47,7 +46,7 @@ function service.client.enter(msg)
     return nil
 end
 
-function service.leave_scene()
+function service.client.leave()
     if not service.sname then 
         return 
     end
@@ -61,18 +60,16 @@ function service.client.shift(msg)
     if not service.sname then 
         return 
     end
-    local x = msg[2] or 0
-    local y = msg[3] or 0
+    local msg = proto.client_decode(shift,msg)
+    local x = msg.player_x or 0
+    local y = msg.player_y or 0
     service.call(service.snode,service.sname,"shift",service.id,x,y)
 end
 
-function service.client.fenlie(msg)
+function service.client.fenlie()
     if not service.sname then 
         return 
     end
     service.call(service.snode,service.sname,"fenlie",service.id)
 end
 
-function service.client.exit()
-    
-end
