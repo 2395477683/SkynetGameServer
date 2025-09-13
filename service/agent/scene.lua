@@ -11,15 +11,10 @@ service.snode = nil
 local function random_scene()
     local nodes={}
     for i , v in pairs(runconfig.scene) do
-        print("测试:  "..i.."  v : "..tostring(v))
         table.insert(nodes,i)
         if runconfig.scene[mynode] then
             table.insert(nodes,mynode)
         end
-    end
-
-    for i ,v in pairs(nodes) do 
-        print("nodes"..i.." : "..v)
     end
     
     local idx =math.random(1,#nodes)
@@ -51,7 +46,7 @@ function service.client.leave()
     if not service.sname then 
         return 
     end
-    service.call(snode,sname,"leave",service.id)
+    service.call(service.snode,service.sname,"leave",service.id)
     service.sname=nil
     service.snode=nil
 end

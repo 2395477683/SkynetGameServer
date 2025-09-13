@@ -38,15 +38,23 @@
 
 ### 核心服务
 - **网关服务(GateWay)**: 处理客户端连接，消息编解码和转发
-- **登录服务(Login)**: 处理用户认证和会话管理
-- **大厅服务(Agent)**: 管理房间列表和玩家匹配
-- **房间服务(Scene)**: 处理游戏核心逻辑和状态同步
+- **登录服务(Login)**: 处理用户认证,账号数据校验和会话管理
+- **代理服务(Agent)**: 玩家数据代理,业务逻辑处理和与场景服务交互
+- **场景服务(Scene)**: 处理游戏核心逻辑,排行榜功能实现和实时状态同步
+- **管理服务(admin/nodemgr/agentmgr)**: 系统监控和管理,节点状态维护和代理服务管理
+
+### 技术特性
+**分布式架构**: 支持多节点部署，服务可横向扩展
+**高性能网络**: 基于Skynet的高效异步IO模型
+**协议处理**: 使用Protobuf进行高效序列化/反序列化
+**数据存储**: 集成Redis和数据库支持
+**热更新支持**: Lua语言特性支持服务热更新
 
 ### 数据流
 1. 客户端通过WebSocket连接网关服务器
 2. 网关使用Protobuf进行消息编解码
-3. 登录验证通过后，用户进入大厅
-4. 大厅服务负责匹配玩家并创建房间
+3. 登录验证通过后，用户进入代理
+4. 代理服务负责匹配玩家并创建游戏场景
 5. 房间内游戏状态通过网关广播给客户端
 6. 游戏数据定期持久化到MySQL，Redis作为缓存加速读写
 
@@ -66,7 +74,6 @@
 - Skynet 1.6.0+
 - Redis 6.0+
 - MySQL 8.0+
-- Protobuf 3.0+
 - Lua 5.4+
 
 ### 安装步骤
@@ -80,14 +87,33 @@ cd SkynetGameServer
 2. 安装依赖
 ```bash
 # 安装系统依赖
-sudo apt-get install automake autoconf libtool build-essential 
-sudo apt-get install libreadline-dev git
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install build-essential automake autoconf libtool pkg-config git
+# CentOS/RHEL
+sudo yum groupinstall "Development Tools"
+sudo yum install automake autoconf libtool pkgconfig git
 
-# 安装Skynet
-make skynet
+# 安装lua相关库
+# Ubuntu/Debian
+sudo apt-get install lua5.3 liblua5.3-dev
+# CentOS/RHEL
+sudo yum install lua lua-devel
 
-# 安装Lua依赖库
-make lualib
+# 安装数据库
+# Redis
+sudo apt-get install redis-server
+# MySQL
+sudo apt-get install mysql-server libmysqlclient-dev
+
+#编译skynet
+cd skynet
+make linux   # 对于Linux系统
+#或者 
+make macosx  # 对于macOS系统
+
+# 检查并安装可能的额外Lua依赖
+sudo apt-get install lua-socket lua-sec
 ```
 
 3. 安装并配置数据库
@@ -103,51 +129,56 @@ mysql -u root -p < sql/init.sql
 ```bash
 cd proto
 make
-```
+```     
 
 5. 启动服务器
 ```bash
-# 启动主节点
-./skynet/skynet config/config.game
+# 启动服务器脚本
+sh start.sh 1
 
-# 启动网关节点
-./skynet/skynet config/config.gate
 ```
 
 ## 📁 项目结构
 
 ```
-SkynetGameServer/
-├── skynet/                 # Skynet框架
-├── lualib/                 # Lua库文件
-│   ├── proto/              # Protobuf生成的Lua代码
-│   ├── cluster.lua         # 集群管理
-│   └── ...                 # 其他工具库
-├── service/                # Skynet服务
-│   ├── gate.lua            # 网关服务
-│   ├── login.lua           # 登录服务
-│   ├── hall.lua            # 大厅服务
-│   ├── room.lua            # 房间服务
-│   ├── db_agent.lua        # 数据库代理
-│   └── monitor.lua         # 监控服务
-├── proto/                  # Protobuf协议定义
-│   ├── message.proto       # 通信协议
-│   ├── struct.proto        # 数据结构
-│   └── Makefile           # 编译脚本
-├── config/                 # 配置文件
-│   ├── config.game         # 游戏服务器配置
-│   ├── config.gate         # 网关配置
-│   ├── config.login        # 登录服务器配置
-│   └── config.room         # 房间服务器配置
-├── sql/                    # 数据库脚本
-│   ├── init.sql            # 初始化数据库
-│   └── update.sql          # 数据库更新脚本
-├── test/                   # 测试代码
-│   ├── unit_test/          # 单元测试
-│   └── pressure_test/      # 压力测试
-├── tools/                  # 工具脚本
-├── Makefile               # 项目构建文件
-└── README.md              # 项目说明
+GameSever
+├── etc/                    # 配置文件目录
+│   ├── config.node1       # 节点1配置文件
+│   ├── config.node2       # 节点2配置文件
+│   └── runconfig.lua      # 运行配置脚本
+├── luaclib/               # 编译后的C库文件
+│   ├── cjson.so           # JSON处理库
+│   └── protobuf.so       # Protobuf库
+├── luaclib_src/           # C库源代码
+│   ├── lua-cjson/         # lua-cjSON库源码
+│   └── pbc/              # Protobuf库源码
+├── lualib/               # Lua库文件
+│   ├── protolua/         # Protocol Lua支持
+│   ├── protobuf.lua      # Protobuf Lua接口
+│   ├── redislHc.lua      # Redis库
+│   └── service.lua       # 服务基础类
+├── proto/                # Protobuf协议定义文件
+├── service/              # Skynet服务实现
+│   ├── admin/            # 管理服务
+│   │   └── init.lua
+│   ├── agent/            # 代理服务
+│   │   ├── init.lua
+│   │   └── scene.lua
+│   ├── agentmgr/         # 代理管理服务
+│   │   └── init.lua
+│   ├── gateway/          # 网关服务
+│   │   └── init.lua
+│   ├── login/            # 登录服务
+│   │   └── init.lua
+│   ├── nodemgr/          # 节点管理服务
+│   │   └── init.lua
+│   └── scene/            # 场景服务
+│       ├── init.lua
+│       ├── leaderboard.lua  # 排行榜功能
+│       └── main.lua
+├── skynet/               # Skynet框架
+├── README.md            # 项目说明文档
+└── start.sh             # 启动脚本
 ```
 
 ## ⚙️ 配置说明
@@ -172,23 +203,23 @@ mysql_host = "127.0.0.1"
 mysql_port = 3306
 mysql_database = "ball_game"
 mysql_user = "root"
-mysql_password = "password"
+mysql_password = "password"     
 
 -- 游戏配置
-max_room_count = 1000      -- 最大房间数
-max_player_per_room = 50   -- 每个房间最大玩家数
-room_timeout = 1800        -- 房间超时时间(秒)
+max_room_count = 1000       -- 最大房间数
+max_player_per_room = 50    -- 每个房间最大玩家数
+room_timeout = 1800         -- 房间超时时间(秒)
 ```
 
-### 网关配置 (config.gate)
+### 网关配置 (runconfig.lua)
 ```lua
 -- 网络配置
-gate_port = 8001           -- 网关端口
-max_client = 10000         -- 最大连接数
-socket_timeout = 60        --  socket超时时间(秒)
+gateway = {[1]=9000,[2]=9001}           -- 网关端口
+max_client = 10000                      -- 最大连接数
+socket_timeout = 60                     --  socket超时时间(秒)
 
 -- 协议配置
-proto_path = "../lualib/proto"  -- Protobuf协议路径
+proto_path = "../proto"  -- Protobuf协议路径
 ```
 
 ## 📡 协议格式
@@ -228,19 +259,60 @@ message SC_EnterRoom {
     RoomInfo room = 3;
 }
 
-// 玩家移动
-message CS_Move {
-    float direction_x = 1;
-    float direction_y = 2;
-    float speed = 3;
+//玩家位置
+message player {
+    int32 playerid = 1;
+    float player_x=2;
+    float player_y=3;
+    int32 player_size = 4;
 }
 
-// 广播玩家移动
-message SC_Move {
-    int32 player_id = 1;
-    float position_x = 2;
-    float position_y = 3;
+//游戏内所有玩家位置
+message playerlist{
+    string cmd =1;
+    repeated player ball = 2;
 }
+
+//排行榜
+message leader {
+    string player_id=1;
+    int32 score = 2;
+    int32 rank=3;
+}
+
+message leaderboard {
+    repeated leader leaderboard =1;
+}
+
+//食物
+message food {
+    int32 foodid =1;
+    float food_x =2;
+    float food_y =3;
+}
+
+//所有食物
+message foodlist{
+    string cmd =1 ;
+    repeated food foodlist =2;
+}
+
+//生成食物
+message Sc_food{
+    string cmd =1 ;
+    int32 food_id =2;
+    float food_x =3 ;
+    float food_y =4 ;
+}
+
+//吃食物
+message Sc_eat{
+    string cmd =1 ;
+    int32 player_id =2;
+    float food_id =3 ;
+    float player_size =4 ;
+}
+
 ```
 
 ## 📋 API文档

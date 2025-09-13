@@ -30,13 +30,7 @@ function M.server_encode(msgtype,msg)
     local buff
     
     if msgtype==service.msgtype.player.players then
-        local protobuf_msg={
-            playerid = msg[1],
-            player_x = msg[2],
-            player_y = msg[3],
-            player_size = msg[4]
-        }
-        buff = pb.encode("player.player",protobuf_msg)
+        buff = pb.encode("player.player",msg)
     elseif msgtype==service.msgtype.player.balls then
         buff = pb.encode("player.playerlist",msg)
     elseif msgtype==service.msgtype.food.foodlist then
@@ -44,12 +38,7 @@ function M.server_encode(msgtype,msg)
     elseif msgtype==service.msgtype.food.foods then
         buff = pb.encode("Sc_Login.Sc_food",msg)
     elseif msgtype==service.msgtype.system then
-        local protobuf_msg={
-            cmd = msg[1],
-            result = msg[2],
-            info = msg[3]
-        }
-        buff = pb.encode("Sc_Login.Sc_Login",protobuf_msg)
+        buff = pb.encode("Sc_Login.Sc_Login",msg)
     elseif msgtype==service.msgtype.leader then
         buff = pb.encode("leader.leaderboard",msg)
     elseif msgtype==service.msgtype.eat then

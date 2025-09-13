@@ -8,7 +8,6 @@ message leader {
     int32 rank=3;
 }
 
-
 message leaderboard {
     repeated leader leaderboard =1;
 }

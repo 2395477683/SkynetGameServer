@@ -28,7 +28,7 @@ end
 
 
 function service.resp.kick(source)
-    service.leave_scene()
+    service.client.leave()
 end
 
 function service.resp.exit(source)

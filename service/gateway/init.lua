@@ -99,7 +99,6 @@ function process_msg(fd,msgstr)
         local loginid = math.random(1,#nodecfg.login)
         local login ="login"..loginid
         local proto_msg=proto.client_encode(cmds,msg)                     --序列化
-
         skynet.send(login,"lua","client",fd,cmds,proto_msg)
     else
         local proto_msg=proto.client_encode(cmds,msg)                     --序列化

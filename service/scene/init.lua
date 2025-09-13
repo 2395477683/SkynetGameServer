@@ -10,6 +10,7 @@ local foods={}
 local food_maxid=0
 local food_count=0
 
+--球实例
 function ball () 
     local m={
         playerid =nil,
@@ -28,6 +29,7 @@ function ball ()
     return ms
 end
 
+--所有玩家
 local function balllist_msg()
     local msg={cmd="balllist"}
     local ball={}
@@ -46,6 +48,7 @@ local function balllist_msg()
     return msg
 end
 
+--食物实例
 local function food()
     local m={
         id=nil,
@@ -55,7 +58,7 @@ local function food()
     return m
 end
 
-
+--全部食物
 local function foodlist_msg()
     local msg = {cmd="foodlist"}
     local foodlist ={}
@@ -71,7 +74,7 @@ local function foodlist_msg()
     return msg
 end
 
-
+--广播
 function broadcast(msg,msgtype)
     for i , v in pairs(balls) do
         service.send(v[1].node,v[1].agent,"send",msgtype,msg)
@@ -87,11 +90,11 @@ function service.resp.enter(source,playerid,node,agent)
     b[1].node = node 
     b[1].agent =agent
     --广播玩家信息
-    local entermsg = {"enter",1,"玩家"..playerid.."加入游戏！"}
+    local entermsg = {cmd="enter",result=1,info="玩家"..playerid.."加入游戏！"}
     entermsg = proto.server_encode(service.msgtype.system,entermsg)
     broadcast(entermsg,service.msgtype.system)
     --更新排行榜记录
-    leaderboard.update_score(playerid,b[1].size)
+    leaderboard.update_score(service.name,playerid,b[1].size)
     --记录
     balls[playerid]=b
     --[[测试
@@ -99,7 +102,7 @@ function service.resp.enter(source,playerid,node,agent)
     print(balls[playerid])
     --]]
     --回应客户端
-    local ret_msg={"enter",0,"进入游戏！"}
+    local ret_msg={cmd="enter",result=0,info="进入游戏！"}
     ret_msg = proto.server_encode(service.msgtype.system,ret_msg)
     --发送游戏信息
     service.send(b[1].node,b[1].agent,"send",service.msgtype.system,ret_msg)
@@ -114,11 +117,13 @@ function service.resp.leave(source,playerid)
         return false
     end
     balls[playerid]=nil
-    local leavemsg ={"leave",playerid}
-
-    broadcast(leavemsg)
+    if not leaderboard.del(service.name,playerid) then
+        skynet.error("del player failed from leaderboard!")
+    end
+    local leavemsg ={cmd="leave",result=1,info=playerid.."离开游戏"}
+    leavemsg = proto.server_encode(service.msgtype.system,leavemsg)
+    broadcast(leavemsg,service.msgtype.system)
 end
-
 
 
 function service.resp.shift(source,playerid,x,y)
@@ -175,7 +180,7 @@ function move_update()
             k.x=k.x+k.speedx*0.2
             k.y=k.y+k.speedy*0.2
             if k.speedx  ~= 0 or k.speedy ~=0 then
-                local msg ={"move",1,"player_id:"..k.playerid..", ".."player_x:"..k.x..", ".."player_y:"..k.y..", ".."\r\n"}
+                local msg ={cmd="move",result=1,info="player_id:"..k.playerid..", ".."player_x:"..k.x..", ".."player_y:"..k.y..", ".."\r\n"}
                 msg = proto.server_encode(service.msgtype.system,msg)
                 broadcast(msg,service.msgtype.system)
             end
@@ -209,7 +214,10 @@ function eat_update()
                 if (v.x-f.x)^2+(v.y-f.y)^2<v.size^2 then
                     v.size=v.size+1
                     food_count=food_count-1
-                    local msg ={"eat",1,"玩家"..v.playerid.."吃掉食物"..fid.."后分数为"..v.size}
+                    if not leaderboard.update_score(service.name,v.playerid,v.size) then
+                        skynet.error("update_score player failed to leaderboard!")
+                    end
+                    local msg ={cmd="eat",result=1,info="玩家"..v.playerid.."吃掉食物"..fid.."后分数为"..v.size}
                     msg = proto.server_encode(service.msgtype.system,msg)
                     broadcast(msg,service.msgtype.system)
                     foods[fid]=nil
@@ -219,8 +227,9 @@ function eat_update()
     end
 end
 
+--更新排行榜
 function board_update()
-    local ok=leaderboard.get_top_players(5)
+    local ok=leaderboard.get_top_players(service.name,5)
 
     if not ok then 
         skynet.error("Failed get_top_players!")
