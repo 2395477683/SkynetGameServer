@@ -1,0 +1,15 @@
+syntax = "proto3";
+package food ;
+
+//食物
+message food {
+    int32 foodid =1;
+    float food_x =2;
+    float food_y =3;
+}
+
+//所有食物
+message foodlist{
+    string cmd =1 ;
+    repeated food foodlist =2;
+}

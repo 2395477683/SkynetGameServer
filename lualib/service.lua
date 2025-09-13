@@ -14,10 +14,17 @@ local M ={
     resp={},
     --消息的类型
     msgtype ={
-        player = 1,
-        food = 2,
-        system =3,
-        leader =4
+        player = {
+            players = 1,
+            balls = 2
+        },
+        food = {
+            foods=3,
+            foodlist=4
+        },
+        system =5,
+        leader =6,
+        eat =7
     }
 }
 

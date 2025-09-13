@@ -3,8 +3,14 @@ package player;
 
 //玩家位置
 message player {
-    string cmd = 1;
-    int32 playerid = 2;
-    int32 player_x=3;
-    int32 player_y=4;
+    int32 playerid = 1;
+    float player_x=2;
+    float player_y=3;
+    int32 player_size = 4;
+}
+
+//游戏内所有玩家位置
+message playerlist{
+    string cmd =1;
+    repeated player ball = 2;
 }

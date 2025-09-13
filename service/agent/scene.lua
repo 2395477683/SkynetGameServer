@@ -2,6 +2,7 @@ local skynet =require "skynet"
 local service =require "service"
 local runconfig =require "runconfig"
 local pb =require "protobuf"
+local proto = require "proto"
 local mynode = skynet.getenv("node")
 
 service.sname = nil
@@ -60,9 +61,9 @@ function service.client.shift(msg)
     if not service.sname then 
         return 
     end
-    local msg = proto.client_decode(shift,msg)
-    local x = msg.player_x or 0
-    local y = msg.player_y or 0
+    local msg = proto.client_decode("shift",msg)
+    local x = msg.direction_x or 0
+    local y = msg.direction_y or 0
     service.call(service.snode,service.sname,"shift",service.id,x,y)
 end
 

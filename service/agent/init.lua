@@ -22,6 +22,8 @@ end
 
 function service.init()
     pb.register_file("./proto/Cs_EnterRoom.pb")
+    pb.register_file("./proto/player.pb")
+    pb.register_file("./proto/food.pb")
 end
 
 

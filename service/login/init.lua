@@ -44,15 +44,15 @@ end
 function service.client.register(fd,msg,source)
     local msg =proto.client_decode("register",msg)
 
-    if msg.playerid==nil or msg.password==nil or msg.username==nil then
+    if msg.playerid=="" or msg.password=="" or msg.username=="" then
         return {"register",0,"注册失败！请输入完整的信息！"}
     end
     local playerid = msg.playerid
     local password = msg.password
     local playername = msg.username
-    local yanzhenid = db:query("select playerid from user where playerid ="..playerid)
-    if #yanzhenid ~= 0 then 
-        print("测试！",yanzhenid[1].playerid)
+    local yanzhenid = redisHc.get_player(playerid)
+    if yanzhenid ~= nil then 
+        print("测试！",yanzhenid)
         return {"register",0,"账号已存在！"}
     end
 
@@ -74,6 +74,9 @@ function service.resp.client(source, fd, cmd, msg)
         local protobuf_ret = proto.server_encode(service.msgtype.system,ret_msg)
         skynet.send(source,"lua","send_by_fd",fd,service.msgtype.system,protobuf_ret)
     else
+        local ret_msg={"error",0,"错误的指令！"}
+        local protobuf_ret = proto.server_encode(service.msgtype.system,ret_msg)
+        skynet.send(source,"lua","send_by_fd",fd,service.msgtype.system,protobuf_ret)
         skynet.error("loginService.resp.client failed！",cmd)
     end
 end

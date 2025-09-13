@@ -7,3 +7,19 @@ message Sc_Login{
     int32 result =2;
     string info =3 ;
 }
+
+//生成食物
+message Sc_food{
+    string cmd =1 ;
+    int32 food_id =2;
+    float food_x =3 ;
+    float food_y =4 ;
+}
+
+//吃食物
+message Sc_eat{
+    string cmd =1 ;
+    int32 player_id =2;
+    float food_id =3 ;
+    float player_size =4 ;
+}

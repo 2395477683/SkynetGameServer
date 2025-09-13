@@ -1,0 +1,14 @@
+syntax = "proto3";
+package leader;
+
+//排行榜
+message leader {
+    string player_id=1;
+    int32 score = 2;
+    int32 rank=3;
+}
+
+
+message leaderboard {
+    repeated leader leaderboard =1;
+}

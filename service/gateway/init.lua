@@ -46,10 +46,43 @@ local str_unpack = function (msgstr)
 end
 
 --构建发送给客户端的信息
-local str_pack = function (msg)
+local str_pack = function (msgtype,msg)
     local str = ""
-    str= msg.cmd..","..msg.result..","..msg.info.."\r\n"
-    return str
+    if msgtype  ==  service.msgtype.player.balls then
+        str=str..msg.cmd
+        for i , v in pairs(msg.ball) do 
+            str=str..", x:"..v.player_x..", y:"..v.player_y..", size:"..v.player_size
+        end
+        str=str.."\r\n"
+        return str
+    elseif msgtype  ==  service.msgtype.player.players then
+        str= msg.cmd..", player_id:"..msg.playerid..", playerd_x:"..msg.player_x..", player_y:"..msg.player_y.."\r\n"
+        return str
+    elseif msgtype  ==  service.msgtype.food.foodlist then
+        str=str..msg.cmd
+        for i , v in pairs(msg.foodlist) do 
+            str=str..", food_id:"..v.foodid..", x:"..v.food_x..", y:"..v.food_y
+        end
+        str=str.."\r\n"
+        return str
+    elseif msgtype  ==  service.msgtype.system then
+        str= msg.cmd..","..msg.result..","..msg.info.."\r\n"
+        return str
+    elseif msgtype  ==  service.msgtype.food.foods then
+        str= msg.cmd..", food_id:"..msg.food_id..", food_x:"..msg.food_x..", food_y:"..msg.food_y.."\r\n"
+        return str
+    elseif msgtype  ==  service.msgtype.leader then
+        for i , v in pairs(msg.leaderboard) do
+            str= str.."player_id:"..v.player_id..", player_score:"..v.score..", player_rank:"..v.rank.."\r\n"
+        end
+        return str
+    elseif msgtype  ==  service.msgtype.eat then
+        str= msg.cmd..", player_id:"..msg.player_id..", food_id:"..msg.food_id..", player_size:"..msg.player_size.."\r\n"
+        return str
+    else
+        str = "错误的消息类型！"
+        return  str
+    end
 end
 
 --检查是否登录
@@ -155,9 +188,8 @@ function service.resp.send_by_fd(source,fd,msgtype,msg)
     end
     local buff =proto.server_decode(msgtype,msg)                --反序列化
     --日志
-    skynet.error("msgtype: "..msgtype..",send : "..fd.." [ "..buff.cmd.." ]{ "..buff.cmd..","..buff.result..","..buff.info.." }")
-
-    buff = str_pack(buff)
+    --skynet.error("msgtype: "..msgtype..",send : "..fd.." [ "..buff.cmd.." ]{ "..buff.cmd..","..buff.result..","..buff.info.." }")
+    buff = str_pack(msgtype,buff)
 
     socket.write(fd,buff)
 end
@@ -225,6 +257,8 @@ function service.init()                                                 --gateWa
     pb.register_file("./proto/Sc_Login.pb")
     pb.register_file("./proto/Cs_EnterRoom.pb")
     pb.register_file("./proto/player.pb")
+    pb.register_file("./proto/food.pb")
+    pb.register_file("./proto/leader.pb")
 
     local listenfd = socket.listen("0.0.0.0",port)
     skynet.error("Listen Socket : 0.0.0.0 Port: "..port)
