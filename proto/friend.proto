@@ -1,0 +1,14 @@
+syntax = "proto3";
+package friend;
+
+//好友
+message friend{
+    uint32 player_id = 1;
+    string player_name = 2;
+    string player_status = 3;
+}
+
+//好友列表
+message friendlist{
+    repeated friend friendlist=1;
+}

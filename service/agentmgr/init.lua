@@ -20,7 +20,6 @@ function mgrplayer()
         status=nil,
         agent=nil,
     }
-
     return m
 end
 

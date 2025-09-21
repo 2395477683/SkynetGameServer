@@ -8,8 +8,8 @@ require "skynet.manager"
 
 function shutdown_gate()
     for node,  _ in pairs()
+    end
 end
-
 
 
 function stop()

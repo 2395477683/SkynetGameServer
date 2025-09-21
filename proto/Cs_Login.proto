@@ -3,7 +3,7 @@ package Cs_Login;
 
 // 登录请求
 message Cs_Login {
-    string playerid = 1;
+    int32 playerid = 1;
     string password = 2;
     string username = 3;
 }

@@ -1,0 +1,31 @@
+syntax = "proto3";
+package Mysql;
+
+//数据库用户表
+message Mysql_user{
+    int32 playerid= 1;
+    string password=2;
+    string username=3;
+    string player_status=4;
+}
+
+//数据库好友表
+message Mysql_friend{
+    int32 id=1;
+    int32 user_id= 2;
+    int32 friend_id= 3;
+    string status=4;
+    string created_at=5;
+    string updated_at=6;
+}
+
+//数据库好友请求表
+message Mysql_friend_request{
+    int32 id=1;
+    int32 from_user_id= 2;
+    int32 to_user_id= 3;
+    string message=4;
+    string status=5;
+    string created_at=6;
+    string updated_at=7;
+}

@@ -79,6 +79,15 @@ local str_pack = function (msgtype,msg)
     elseif msgtype  ==  service.msgtype.eat then
         str= msg.cmd..", player_id:"..msg.player_id..", food_id:"..msg.food_id..", player_size:"..msg.player_size.."\r\n"
         return str
+    elseif msgtype  ==  service.msgtype.friend then
+        if #msg.friendlist == 0 then 
+            str="你现在没有好友\r\n"
+        else 
+            for i , v in pairs(msg.friendlist) do 
+                str=str.."player_id:"..v.player_id..", player_name:"..v.player_name..", player_status:"..v.player_status.."\r\n"
+            end
+        end
+        return str
     else
         str = "错误的消息类型！"
         return  str
@@ -186,20 +195,24 @@ function service.resp.send_by_fd(source,fd,msgtype,msg)
         return
     end
     local buff =proto.server_decode(msgtype,msg)                --反序列化
-    --日志
-    --skynet.error("msgtype: "..msgtype..",send : "..fd.." [ "..buff.cmd.." ]{ "..buff.cmd..","..buff.result..","..buff.info.." }")
+    if msgtype==8 then
+        for i , v in pairs(buff) do 
+            skynet.error(i,v[1].player_id)
+        end
+    end
     buff = str_pack(msgtype,buff)
-
     socket.write(fd,buff)
 end
 
 function service.resp.send(source,playerid,msgtype,msg)
-    local gplayer = players[playerid]
-    if gplayer== nil then
+    local gplayer = players[tonumber(playerid)]
+    if gplayer == nil then
+        skynet.error("gateway: gplayer is nil!")
         return
     end
     local c = gplayer.conn
     if c == nil then 
+        skynet.error("gateway: c is nil!")
         return 
     end
     service.resp.send_by_fd(nil,c.fd,msgtype,msg)
@@ -208,7 +221,6 @@ end
 
 function service.resp.sure_agent(source,fd,playerid,agent)
     local conn =conns[fd]
-    skynet.error("conn",conn)
     if not conn then
         return 
     end
@@ -244,8 +256,6 @@ function service.resp.kick(source,playerid)
     socket.close(c.fd)
 end
 
-
-
 function service.init()                                                 --gateWay服务初始化
     skynet.error("[start] "..service.name.." "..service.id)
     local node = skynet.getenv("node")
@@ -258,6 +268,8 @@ function service.init()                                                 --gateWa
     pb.register_file("./proto/player.pb")
     pb.register_file("./proto/food.pb")
     pb.register_file("./proto/leader.pb")
+    pb.register_file("./proto/friend.pb")
+    pb.register_file("./proto/Mysql.pb")
 
     local listenfd = socket.listen("0.0.0.0",port)
     skynet.error("Listen Socket : 0.0.0.0 Port: "..port)

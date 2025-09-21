@@ -122,6 +122,10 @@ function service.resp.leave(source,playerid)
     end
     local leavemsg ={cmd="leave",result=1,info=playerid.."离开游戏"}
     leavemsg = proto.server_encode(service.msgtype.system,leavemsg)
+
+    local msg = {player_status = "offline"}
+    local issucc,err= redisHc.update_player(playerid,msg)
+
     broadcast(leavemsg,service.msgtype.system)
 end
 

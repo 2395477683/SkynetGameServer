@@ -1,17 +1,20 @@
 local skynet =require "skynet"
 local service = require "service"
 local pb =require "protobuf"
+local redisHc = require "redisHc"
 
 service.client={}
 service.gate=nil
 
 require "scene"
+require "friend"
 
 function service.resp.client(source,cmd,msg)
     service.gate=source
     if service.client[cmd] then
         local ret_msg,msgtype = service.client[cmd](msg,source)
         if ret_msg then
+            skynet.error(ret_msg,msgtype)
             skynet.send(source,"lua","send",service.id,msgtype,ret_msg)
         end
     else
@@ -21,9 +24,14 @@ end
 
 
 function service.init()
+    redisHc.Hcinit()
     pb.register_file("./proto/Cs_EnterRoom.pb")
+    pb.register_file("./proto/Cs_Login.pb")
     pb.register_file("./proto/player.pb")
     pb.register_file("./proto/food.pb")
+    pb.register_file("./proto/friend.pb")
+    pb.register_file("./proto/Mysql.pb")
+    pb.register_file("./proto/Sc_Login.pb")
 end
 
 

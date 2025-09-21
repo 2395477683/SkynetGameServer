@@ -24,11 +24,15 @@ local M ={
         },
         system =5,
         leader =6,
-        eat =7
+        eat =7,
+        friend=8,
+        mysql={
+            user=9,
+            friend=10,
+            request=11
+        }
     }
 }
-
-
 
 
 function traceback(err)
